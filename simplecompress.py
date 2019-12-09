@@ -16,21 +16,27 @@ def compress(o, iter):
     r = 0
     r = findR(r, o, s)
     print('r = ' + r)
+
     if r != "":
-        o = o.replace(r, s)
-        dBit1 = "1" if r[0] == "0" else "0"
-        dBit2 = "1" if o[0] == "0" else "0"
-        c = s + ' ' + r + ' ' + o + ' ' + dBit2 + ' ' + \
-            r[::-1] + ' ' + dBit1 + ' ' + s[::-1] + ' ' + str(iter)
-        print('c = ' + c)
-        return c
-        # c2 = compress(c, iter+1)
-        # if len(c2) < len(c):
-        #     return c2
-        # else:
-        #     return c
-    else:
-        return o
+        cBody = o.replace(r, s)
+        tComp = s + ' ' + r + ' ' + cBody + ' 1 ' + \
+            r[::-1] + ' 1 ' + s[::-1] + ' ' + str(iter)
+        print(o)
+        print(tComp)
+        print('len(o):' + str(len(o)))
+        print('len(c):' + str(len(tComp)))
+        if (2*len(s) + 2*len(r) + len(cBody) + 3) < len(o):
+            dBit1 = "1" if r[0] == "0" else "0"
+            dBit2 = "1" if cBody[0] == "0" else "0"
+            c = s + ' ' + r + ' ' + cBody + ' ' + dBit2 + ' ' + \
+                r[::-1] + ' ' + dBit1 + ' ' + s[::-1] + ' ' + str(iter)
+            print('c = ' + c)
+            #c = c.replace(" ", "", -1)
+            c2 = compress(c, 1)
+            if len(c2) < len(c):
+                return c2
+            return c
+    return o
 
 
 def findS(val):
@@ -109,14 +115,14 @@ def decompress(c):
 
 # s = 100
 # r = 11111111111
-# 00010 1111111111 1111111111 1111111111
+# 00010 11111111111 11111011111 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111
 # o = "101100010110001"
-o = "00010111111111111111111111111111111"
+o = "000101111111111111111111111111111111111111111111111111111111"
 print("o = " + o)
 print("**compressing")
 c = compress(o, 0)
-print("**decompressing ")
-d = decompress(c)
-print("**complete")
-print("new: " + d)
-print("ori: " + d)
+#print("**decompressing ")
+#d = decompress(c)
+# print("**complete")
+#print("new: " + d)
+#print("ori: " + d)
