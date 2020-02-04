@@ -10,7 +10,7 @@ import math
 import os
 
 
-def compress(o, iter):
+def compress(o, iter, permOriginal):
     s = findS(o)
     print('s = ' + s)
     r = 0
@@ -18,24 +18,20 @@ def compress(o, iter):
     print('r = ' + r)
 
     if r != "":
-        cBody = o.replace(r, s)
-        tComp = s + ' ' + r + ' ' + cBody + ' 1 ' + \
-            r[::-1] + ' 1 ' + s[::-1] + ' ' + str(iter)
-        print(o)
-        print(tComp)
-        print('len(o):' + str(len(o)))
-        print('len(c):' + str(len(tComp)))
-        if (2*len(s) + 2*len(r) + len(cBody) + 3) < len(o):
-            dBit1 = "1" if r[0] == "0" else "0"
-            dBit2 = "1" if cBody[0] == "0" else "0"
-            c = s + ' ' + r + ' ' + cBody + ' ' + dBit2 + ' ' + \
-                r[::-1] + ' ' + dBit1 + ' ' + s[::-1] + ' ' + str(iter)
-            print('c = ' + c)
-            #c = c.replace(" ", "", -1)
-            c2 = compress(c, 1)
-            if len(c2) < len(c):
-                return c2
-            return c
+        cBody = permOriginal.replace(r, s)
+        dBit1 = "1" if r[0] == "0" else "0"
+        dBit2 = "1" if cBody[0] == "0" else "0"
+        readable = s + ' ' + r + ' ' + cBody + ' ' + dBit2 + ' ' + r[::-1] + ' ' + dBit1 + ' ' + s[::-1] + ' ' + str(iter)
+        c = readable.replace(" ", "", -1)
+        print("permOriginal = ", permOriginal)
+        print("readable = ", readable)
+        print("c = ", c)
+        print('len(permOriginal):' + str(len(permOriginal)))
+        print('len(c):' + str(len(c)))
+        c2 = compress(c, iter + 1, permOriginal)
+        if len(c2) < len(c):
+            return c2
+        return c
     return o
 
 
@@ -50,28 +46,33 @@ def findS(val):
 
 def findR(longest, o, s):
     def savingsForWord(i, word, s):
-        return (i * len(word)) - (i * len(s)) - 3
-    ilongest = 0
-    longest = ""
-    h = math.floor(len(o) / 2)
-    for x in range(h, 1, -1):
+        return ((i - 2) * len(word)) - ((i + 2) * len(s)) - 3
+    bestCt = 0
+    best = ""
+    bestSavings = 0
+    h = int(math.floor(len(o) / 2))
+    for rLen in range(h, 1, -1):
         start = 0
-        while start + (2*x) <= len(o):
-            curr = o[start:start + x]
-            step = x
-            i = 0
-            while step + x <= len(o):
-                match = o[step:step + x]
-                if match == curr:
-                    step = step + x
-                    i = i + 1
+        while start + (2*rLen) <= len(o):
+            toMatch = o[start:start + rLen]
+            print("toMatch = ", toMatch)
+            step = rLen
+            instanceCt = 0
+            while step + rLen <= len(o):
+                match = o[step:step + rLen]
+                if match == toMatch:
+                    step = step + rLen
+                    instanceCt = instanceCt + 1
                 else:
                     step = step + 1
-            if (savingsForWord(i, curr, s) > 0 and savingsForWord(i, curr, s) > savingsForWord(ilongest, longest, s)):
-                longest = curr
-                ilongest = i
+            savings = savingsForWord(instanceCt, toMatch, s)
+            if (savings > 0 and savings > bestSavings):
+                best = toMatch
+                bestCt = instanceCt
+                bestSavings = savingsForWord(bestCt, best, s)
+                print("new best! savings is ", bestSavings)
             start = start+1
-    return longest
+    return best
 
 
 def decompress(c):
@@ -115,12 +116,13 @@ def decompress(c):
 
 # s = 100
 # r = 11111111111
-# 00010 11111111111 11111011111 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111
+# 00010 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111
+       #1111111111
 # o = "101100010110001"
 o = "000101111111111111111111111111111111111111111111111111111111"
 print("o = " + o)
 print("**compressing")
-c = compress(o, 0)
+c = compress(o, 0, o)
 #print("**decompressing ")
 #d = decompress(c)
 # print("**complete")
