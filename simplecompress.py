@@ -16,6 +16,7 @@ def compress(o, iter, permOriginal):
     r = 0
     r = findR(r, o, s)
     print('r = ' + r)
+    c = o
 
     if r != "":
         cBody = permOriginal.replace(r, s)
@@ -32,7 +33,9 @@ def compress(o, iter, permOriginal):
         if len(c2) < len(c):
             return c2
         return c
-    return o
+    else:
+        print("no R, compression not valuable returning previous iteration")
+    return c
 
 
 def findS(val):
@@ -55,7 +58,7 @@ def findR(longest, o, s):
         start = 0
         while start + (2*rLen) <= len(o):
             toMatch = o[start:start + rLen]
-            print("toMatch = ", toMatch)
+            #print("toMatch = ", toMatch)
             step = rLen
             instanceCt = 0
             while step + rLen <= len(o):
@@ -70,7 +73,7 @@ def findR(longest, o, s):
                 best = toMatch
                 bestCt = instanceCt
                 bestSavings = savingsForWord(bestCt, best, s)
-                print("new best! savings is ", bestSavings)
+                print("new best r! r is", best, "savings is ", bestSavings)
             start = start+1
     return best
 
@@ -78,10 +81,10 @@ def findR(longest, o, s):
 def decompress(c):
     iter = c[-1:]
     print("iter = " + iter)
-    c = c[0:-2]
+    c = c[0:-1]
     rev = c[::-1]
-    print("com = " + c)
-    print("rev = " + rev)
+    print("c = " + c)
+    print("reversed = " + rev)
     c = c.replace(" ", "", -1)
     rev = rev.replace(" ", "", -1)
 
@@ -99,13 +102,13 @@ def decompress(c):
 
     rev = rev.replace(" ", "", 1)
     print("r = '" + r + "'")
-    print("com = " + c)
-    print("rev = " + rev)
+    print("c = " + c)
+    print("reversed = " + rev)
     c = c.replace(s, r, -1)
 
     c = c.replace(s, r, -1)
-    print("com = " + c)
-    print("rev = " + rev)
+    print("c = " + c)
+    print("reversed = " + rev)
 
     if iter == "0":
         print("last decompress")
@@ -123,6 +126,12 @@ o = "000101111111111111111111111111111111111111111111111111111111"
 print("o = " + o)
 print("**compressing")
 c = compress(o, 0, o)
+print(c)
+print("**decompressing")
+d = decompress(c)
+print("o", o)
+print("d", d)
+print(o==d)
 #print("**decompressing ")
 #d = decompress(c)
 # print("**complete")
