@@ -4,18 +4,29 @@
 # c = o with r replaced by s
 # ^ = reverse of indicated string
 # i = iteration
-# src{-c[0]}{^r}{-r[0]}{^s}{i}
+# compressed = {s}{r}{c}{-c[0]}{^r}{-r[0]}{^s}{i}
 import itertools
 import math
 import os
+import bitstring
+import bitarray
 
+tabSize = ""
+def indent():
+    global tabSize
+    tabSize = tabSize + "  "
+def outdent():
+    global tabSize
+    tabSize = tabSize[:-2]
 
 def compress(o, iter, permOriginal):
+    print(tabSize + "**compressing")
+    indent()
     s = findS(o)
-    print('s = ' + s)
+    print(tabSize + 's = ' + s)
     r = 0
     r = findR(r, o, s)
-    print('r = ' + r)
+    print(tabSize + 'r = ' + r)
     c = o
 
     if r != "":
@@ -24,24 +35,22 @@ def compress(o, iter, permOriginal):
         dBit2 = "1" if cBody[0] == "0" else "0"
         readable = s + ' ' + r + ' ' + cBody + ' ' + dBit2 + ' ' + r[::-1] + ' ' + dBit1 + ' ' + s[::-1] + ' ' + str(iter)
         c = readable.replace(" ", "", -1)
-        print("permOriginal = ", permOriginal)
-        print("readable = ", readable)
-        print("c = ", c)
-        print('len(permOriginal):' + str(len(permOriginal)))
-        print('len(c):' + str(len(c)))
-        c2 = compress(c, iter + 1, permOriginal)
-        if len(c2) < len(c):
-            return c2
-        return c
+        if len(c) < len(o):
+            print(tabSize + "(" + str(len(c)) + " bits) c = " + c[:50] + "... (" + readable[:50] + "...)")
+            c2 = compress(c, 1, permOriginal)
+            if len(c2) < len(c):
+                return c2
     else:
-        print("no R, compression not valuable returning previous iteration")
-    return c
+        print(tabSize + "no R, compression not valuable returning previous iteration")
 
+    outdent()
+    if iter == 0:
+        print(tabSize + "final compressed " + c[:50] + "...\n")
+    return c
 
 def findS(val):
     for x in range(0, len(val)):
-        combos = set(["".join(seq)
-                      for seq in itertools.product("01", repeat=x)])
+        combos = list(["".join(seq) for seq in itertools.product(["0", "1"], repeat=x)])
         for s in combos:
             if s not in val:
                 return s
@@ -53,14 +62,19 @@ def findR(longest, o, s):
     bestCt = 0
     best = ""
     bestSavings = 0
-    h = int(math.floor(len(o) / 2))
-    for rLen in range(h, 1, -1):
+
+    q = int(math.floor(len(o) / 4))
+    indent()
+    for rLen in range(len(s), q, 1):
+        print("checking " + str(rLen))
         start = 0
-        while start + (2*rLen) <= len(o):
+        step = start
+        indent()
+        while start + (2*rLen) < len(o):
             toMatch = o[start:start + rLen]
-            #print("toMatch = ", toMatch)
-            step = rLen
-            instanceCt = 0
+            step = start + rLen
+            instanceCt = 1
+            indent()
             while step + rLen <= len(o):
                 match = o[step:step + rLen]
                 if match == toMatch:
@@ -68,72 +82,77 @@ def findR(longest, o, s):
                     instanceCt = instanceCt + 1
                 else:
                     step = step + 1
-            savings = savingsForWord(instanceCt, toMatch, s)
-            if (savings > 0 and savings > bestSavings):
-                best = toMatch
-                bestCt = instanceCt
-                bestSavings = savingsForWord(bestCt, best, s)
-                print("new best r! r is", best, "savings is ", bestSavings)
-            start = start+1
+            outdent()
+            if instanceCt > 2:
+                savings = savingsForWord(instanceCt, toMatch, s)
+                if (savings > 0 and savings > bestSavings):
+                    best = toMatch
+                    bestCt = instanceCt
+                    bestSavings = savings
+            start = start + 1
+        outdent()
+    outdent()
     return best
 
 
 def decompress(c):
+    print(tabSize + "**decompressing")
+    indent()
     iter = c[-1:]
-    print("iter = " + iter)
-    c = c[0:-1]
-    rev = c[::-1]
-    print("c = " + c)
-    print("reversed = " + rev)
-    c = c.replace(" ", "", -1)
+    print(tabSize + "iter = " + iter)
+    compressed = c[0:-1]
+    rev = compressed[::-1]
+    print(tabSize + "cmp = " + compressed[:50] + "...")
+    print(tabSize + "rev = " + rev[:50] + "...")
+    compressed = compressed.replace(" ", "", -1)
     rev = rev.replace(" ", "", -1)
 
-    s = os.path.commonprefix([c, rev])
-    c = c[len(s):-(len(s) + 2)]
+    s = os.path.commonprefix([compressed, rev])
+    compressed = compressed[len(s):-(len(s) + 2)]
     rev = rev[(len(s) + 1):-len(s)]
-    #c = c[:-1]
-    print("s = '" + s + "'")
-    #print("com = " + c)
-    #print("rev = " + rev)
+    print(tabSize + "s = '" + s + "'")
 
-    r = os.path.commonprefix([c, rev])
-    c = c[len(r):-(len(r) + 2)]
+    r = os.path.commonprefix([compressed, rev])
+    compressed = compressed[len(r):-len(r)]
     rev = rev[(len(r) + 1):-len(r)]
 
     rev = rev.replace(" ", "", 1)
-    print("r = '" + r + "'")
-    print("c = " + c)
-    print("reversed = " + rev)
-    c = c.replace(s, r, -1)
+    print(tabSize + "r = '" + r + "'")
+    print(tabSize + "c body = " + compressed[:50] + "...")
 
-    c = c.replace(s, r, -1)
-    print("c = " + c)
-    print("reversed = " + rev)
+    decompressed = compressed
+    decompressed = decompressed.replace(s, r, -1)
 
+    print(tabSize + "d body = " + decompressed[:50] + "...")
+
+    outdent()
     if iter == "0":
-        print("last decompress")
-        return c
+        print(tabSize + "final decompressed " + decompressed[:50] + "...\n")
+        return decompressed
     else:
-        return decompress(c)
+        return decompress(decompressed)
 
+def writeFile(s, fileName):
+    with open(fileName, 'wb') as fh:
+        bitarray.bitarray(s).tofile(fh)
 
+# sample case
 # s = 100
 # r = 11111111111
-# 00010 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111 11111111111
-       #1111111111
-# o = "101100010110001"
-o = "000101111111111111111111111111111111111111111111111111111111"
-print("o = " + o)
-print("**compressing")
+# o = 00010 11111111111 11111111111 11111111111 11111111111 11111111111
+# o = "000101111111111111111111111111111111111111111111111111111111"
+
+# real case
+o = bitstring.ConstBitStream(filename = 'test.gif').read("bin")
+
+# main
+print(" (" + str(len(o)) + " bits) o = " + o[:50] + "...\n")
+
 c = compress(o, 0, o)
-print(c)
-print("**decompressing")
+writeFile(c, "compressed.scmp")
 d = decompress(c)
-print("o", o)
-print("d", d)
-print(o==d)
-#print("**decompressing ")
-#d = decompress(c)
-# print("**complete")
-#print("new: " + d)
-#print("ori: " + d)
+writeFile(d, "decompressed.gif")
+
+print("o = " + o[:50] + "...")
+print("d = " + d[:50] + "...")
+print(o == d)
